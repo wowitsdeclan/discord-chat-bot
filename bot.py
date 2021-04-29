@@ -1,20 +1,24 @@
 '''
 Author(s): Declan Hollingworth
 Title: Python Discord Chat Bot
-Date: 2021-04-06
+Description: 
+  This bot accepts a command "!showme" followed by a search term and returns a random gif from that search term using the Discord and Tenor API's
+Last Updated: 2021-04-29
 '''
+#Imports
 import os
 import random
 import requests
 import discord
 from dotenv import load_dotenv
 import json
+from keep_alive import keep_alive
 
+#Linking API's
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 apikey = os.getenv('TENORKEY')
-lmt = 10
-search_term = "bingus"
+lmt = 50 #Search limit, returns random gif from the top 50 results
 client = discord.Client()
 
 @client.event
@@ -33,21 +37,18 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    monke_quotes = ['Monke pee, Monke poo','Return to monke','bingus bongus', 'Come With Me To Monkey Land', 'Hi Herb', 'Bingus Sus']
-
-    if message.content == '!bingus':
-        response = random.choice(monke_quotes)
-        await message.channel.send(response)
-    if message.content == '!showmebingus':
+    if message.content[:7] == '!showme': #Slices string and checks for the command term
+        searchKey = message.content[7:] 
         r = requests.get(
-        "https://g.tenor.com/v1/search?q=%s&key=%s&limit=%s" % (search_term, apikey, lmt))
+        "https://g.tenor.com/v1/search?q=%s&key=%s&limit=%s" % (searchKey, apikey, lmt))
         if r.status_code == 200:
-            # load the GIFs using the urls for the smaller GIF sizes
+            # load the GIFs using the urls
             gif = json.loads(r.content)
-            i = random.randint(3, 9)
+            i = random.randint(0, lmt-1)
             url = gif['results'][i]['media'][0]['gif']['url']
             await message.channel.send(url)
         else:
-            gif = None
-        
+            gif = None    
+
+keep_alive() #Calling keep_alive(), allows another bot to ping the webpage every 5min and keep it online
 client.run(TOKEN)
